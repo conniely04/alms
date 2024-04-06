@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 
-require("dotenv").config();
+mapboxgl.accessToken =
+  "pk.eyJ1IjoiY29ubmllbHkwNCIsImEiOiJjbG5namJ4NTYwdm82MmtxeDVlbjdlbmp4In0.NWMlrVKbeXYxskBZkpQI0Q";
 
-mapboxgl.accessToken = process.env.MAPBOX_TOKEN;
 function Map() {
   const mapContainerRef = useRef(null);
 
