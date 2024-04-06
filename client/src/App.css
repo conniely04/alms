@@ -14,3 +14,8 @@
   padding-top: 120px;
   width: 40%; /* Decrease this value to move the Prompt component to the left */
 }
+
+.mapboxgl-ctrl-geolocate::before {
+  content: "Get Current Location";
+  margin-right: 5px;
+}

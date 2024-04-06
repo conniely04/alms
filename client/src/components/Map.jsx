@@ -1,10 +1,15 @@
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
+import axios from "axios";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiY29ubmllbHkwNCIsImEiOiJjbG5namJ4NTYwdm82MmtxeDVlbjdlbmp4In0.NWMlrVKbeXYxskBZkpQI0Q";
 
 function Map() {
+  const [userLocation, setUserLocation] = useState({
+    longitude: null,
+    latitude: null,
+  });
   const mapContainerRef = useRef(null);
 
   useEffect(() => {
@@ -15,20 +20,40 @@ function Map() {
       zoom: 12.5,
     });
 
-    map.addControl(
-      new mapboxgl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        // When active the map will receive updates to the device's location as it changes.
-        trackUserLocation: true,
-        // Draw an arrow next to the location dot to indicate which direction the device is heading.
-        showUserHeading: true,
-      })
-    );
+    const geolocate = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true,
+      },
+      trackUserLocation: true,
+      showUserHeading: true,
+    });
+
+    geolocate.on("geolocate", (e) => {
+      const longitude = e.coords.longitude;
+      const latitude = e.coords.latitude;
+      setUserLocation({ longitude, latitude });
+    });
+
+    map.addControl(geolocate);
+
     // Clean up on unmount
     return () => map.remove();
-  }, []); // Empty dependency array means this effect runs once on mount and clean up on unmount
+  }, []);
+
+  const findparking = async () => {
+    const { longitude, latitude } = userLocation;
+    console.log("findparking parameters:", longitude, latitude);
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/api/v1/parking?parking_day=M&start_time=300&end_time=600&x_coord=${longitude}&y_coord=${latitude}&radius=0.1`
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.error("Error fetching parking data:", error);
+    }
+  };
+
+  findparking().then((data) => console.log(data));
 
   return (
     <div ref={mapContainerRef} style={{ width: "700px", height: "700px" }}>
