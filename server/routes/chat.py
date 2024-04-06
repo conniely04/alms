@@ -53,8 +53,11 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
         start_time = response['start']
         end_time = response['end']
         res = await get_streets(parking_day, start_time, end_time, longitude, latitude, radius)
-        return res
-    
+        return {
+            "response": "done",
+            "message": "Here is a parking that may work for you!",
+            "parking": res
+        }    
 
 def is_message_looking_for_parking(message: str) -> bool:
     chat_completion = client.chat.completions.create(
