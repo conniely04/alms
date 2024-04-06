@@ -20,7 +20,24 @@ while end_time > starting_time:
         return 'no parking found for this time'
 '''
 
-async def get_streets(date_time: tuple[datetime.time], location: tuple, radius:int):
-    streets = db.get_streets(location, radius)
-    return streets
-    
+async def get_streets(parking_day: str, start_time: int, end_time: int, x_coord: float, y_coord: float, radius: float):
+    segments = []
+
+    while end_time > start_time:
+        parking_time = end_time - start_time
+        possible_segment_list = []
+
+        while parking_time > 0 and not possible_segment_list:
+            print(f'searching for street of {parking_time} hours')
+            possible_segment_list = await db.get_closest_streets(parking_day, start_time, end_time, x_coord, y_coord, radius)
+            parking_time -= 100
+
+        if possible_segment_list:
+            print(possible_segment_list)
+            segments.append(possible_segment_list[0])
+            start_time = start_time + parking_time + 100
+        else:
+            print('no parking found for this time')
+            return []
+        
+    return segments
