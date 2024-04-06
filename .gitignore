@@ -1,5 +1,6 @@
 .env
 env.py
+env
 __pycache__
 
 # Logs
