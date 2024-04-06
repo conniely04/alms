@@ -1,15 +1,17 @@
 import "./App.css";
 import Map from "./components/Map";
-import GPTComponent from "./components/Gpt";
+import Prompt from "./components/Prompt";
 
 function App() {
   return (
-    <>
-      <div>
+    <div className="app">
+      <div className="map">
         <Map />
-        <GPTComponent />
       </div>
-    </>
+      <div className="prompt">
+        <Prompt />
+      </div>
+    </div>
   );
 }
 
