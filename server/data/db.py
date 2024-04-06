@@ -1,14 +1,16 @@
 import aiohttp
 import datetime
+import enum
 from env import NEURELO_KEY
 
-db_url = ''
+db_url = 'https://us-west-2.aws.neurelo.com/rest/parking'
 
-async def get_closest_streets(date_time: tuple[datetime.time], location: tuple, radius:int):
+async def get_closest_streets(day: str, date_time: tuple[datetime.time], parking_time: datetime.time,  location: tuple, radius:int):
     async with aiohttp.ClientSession() as session:
-        db_res = session.get(
-            # TODO: add correct query after neurelo responds
-            f'{db_url}/streets?',
+        res = await session.get(
+            # TODO: add correct query params once db is ready
+            f'{db_url}/custom/find-time-location?',
             headers = {'X-API-KEY': NEURELO_KEY}
-        ).json()
-        return db_res
+        )
+        res = await res.json()
+        return res
