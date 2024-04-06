@@ -33,7 +33,6 @@ async def get_streets(parking_day: str, start_time: int, end_time: int, x_coord:
             parking_time -= 100
 
         if possible_segment_list:
-            print(possible_segment_list)
             segments.append(possible_segment_list[0])
             start_time = start_time + parking_time + 100
         else:
