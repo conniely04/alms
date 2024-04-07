@@ -1,18 +1,31 @@
-import "./App.css";
-import Map from "./components/Map";
-import Prompt from "./components/Prompt";
+import Web from "./views/Web";
+import Mobile from "./views/Mobile";
+import { useEffect, useState } from "react";
+import lodash from 'lodash'
 
-function App() {
+export default function App() {
+
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+
+  const debouncedHandleResize = lodash.throttle((size) => {
+    setWindowWidth(size)
+  }, 250)
+
+  useEffect(() => {
+    window.addEventListener('resize', () => {
+      debouncedHandleResize(window.innerWidth)
+    })
+
+    return () => {
+      window.removeEventListener('resize', () => {
+        debouncedHandleResize(window.innerWidth)
+      });
+    }
+  }, [])
+
   return (
-    <div className="app">
-      <div className="map">
-        <Map />
-      </div>
-      <div className="prompt">
-        <Prompt />
-      </div>
-    </div>
-  );
+    <>
+      {windowWidth > 768 ? <Web /> : <Mobile />}
+    </>
+  )
 }
-
-export default App;
