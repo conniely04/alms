@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function Prompt() {
+export default function Prompt(height) {
 
     const [inputText, setInputText] = useState("");
     const [messages, setMessages] = useState([
@@ -39,8 +39,8 @@ export default function Prompt() {
     }
 
     return (
-        <>
-            <div className="flex flex-col flex-1 overflow-y-scroll gap-3 py-5 px-3">{
+        <div className="flex flex-col justify-between h-full w-full">
+            <div className="flex flex-col overflow-y-scroll flex-1 gap-3 py-5 px-3 no-scrollbar">{
                 messages.slice(1,).map((message) => {
                     return (
                         message.role === "user"
@@ -76,7 +76,7 @@ export default function Prompt() {
                 />
                 <div className="m-auto bg-orange-600 px-3 py-2 rounded-md" onClick={sendMessage}>Send</div>
             </div>
-        </>
+        </div>
     );
 };
 
