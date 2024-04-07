@@ -14,8 +14,8 @@ class RequestBody(BaseModel):
     radius: float = 0.1
 
 class ChatOutputSchema(BaseModel):
-    response: str
     message: str
+    response: str
     start: int
     end: int
     day: str
