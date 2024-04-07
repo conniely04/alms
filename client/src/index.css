@@ -20,4 +20,9 @@ body {
   scrollbar-width: none;
 }
 
+.mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-bottom-right {
+  display: none !important;
+}
+
 @media (prefers-color-scheme: light) {}
