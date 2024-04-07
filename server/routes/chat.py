@@ -36,9 +36,9 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
     chat_completion = client.chat.completions.create(
         model="accounts/fireworks/models/mixtral-8x7b-instruct",
         response_format={"type": "json_object", "schema": ServiceSchema.schema_json()},
-        messages=messages + [{
+        messages=[messages[-1]] + [{
             "role": "user",
-            "content": "Which of the following services am I inquiring about: bathroom, water, library, narcan, or parking? Respond in JSON format."
+            "content": "Which of the following services do you think I need: bathroom, water, library, narcan, parking, or none? Respond in JSON format."
         }],
     )
 
@@ -170,6 +170,13 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
             "message": "Now finding the nearest narcan stations.",
             "narcan": res
         }
+    else:
+        chat_completion = client.chat.completions.create(
+            model="accounts/fireworks/models/mixtral-8x7b-instruct",
+            messages=messages,
+        )
+        response = chat_completion.choices[0].message.content
+        return { "message": response }
 
     # elif "Now finding" in response:
     #     if "bathroom" in response:
