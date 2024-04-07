@@ -4,85 +4,107 @@ import axios from "axios";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken =
-    "pk.eyJ1IjoiY29ubmllbHkwNCIsImEiOiJjbG5namJ4NTYwdm82MmtxeDVlbjdlbmp4In0.NWMlrVKbeXYxskBZkpQI0Q";
+  "pk.eyJ1IjoiY29ubmllbHkwNCIsImEiOiJjbG5namJ4NTYwdm82MmtxeDVlbjdlbmp4In0.NWMlrVKbeXYxskBZkpQI0Q";
 
 function Map() {
-    const [userLocation, setUserLocation] = useState({
-        longitude: null,
-        latitude: null,
+  const [userLocation, setUserLocation] = useState({
+    longitude: null,
+    latitude: null,
+  });
+  let marker;
+  let dragmarker;
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const mapContainerRef = useRef(null);
+
+  //findparking().then((data) => console.log(data));
+
+  useEffect(() => {
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: "mapbox://styles/mapbox/navigation-night-v1",
+      center: [-122.4147, 37.7856],
+      zoom: 12.5,
     });
-    let marker;
-    const [isLoading, setIsLoading] = useState(false);
 
-    const mapContainerRef = useRef(null);
+    map.on("load", () => {
+      console.log("Map loaded");
+    });
 
-    //findparking().then((data) => console.log(data));
+    const geolocate = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true,
+      },
+      trackUserLocation: true,
+      showUserHeading: true,
+    });
 
-    useEffect(() => {
-        const map = new mapboxgl.Map({
-            container: mapContainerRef.current,
-            style: "mapbox://styles/mapbox/navigation-night-v1",
-            center: [-122.4147, 37.7856],
-            zoom: 12.5,
+    geolocate.on("geolocate", async (e) => {
+      const longitude = e.coords.longitude;
+      const latitude = e.coords.latitude;
+      setUserLocation({ longitude, latitude });
+
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/api/v1/parking?parking_day=M&start_time=300&end_time=600&x_coord=${longitude}&y_coord=${latitude}&radius=0.1`
+        );
+        console.log("data:", response.data);
+        response.data.forEach((item, index) => {
+          if (marker) {
+            marker.remove();
+          }
+          if (dragmarker) {
+            dragmarker.remove();
+          }
+
+          console.log(`Parking Spot ${index} mid Coord:`, item.midpoint);
+          const [longitude, latitude] = item.midpoint
+            .replace(/[()]/g, "")
+            .split(",");
+
+          dragmarker = new mapboxgl.Marker({ offset: [0, -50 / 2] })
+            .setLngLat([
+              parseFloat(userLocation.longitude),
+              parseFloat(userLocation.latitude),
+            ])
+            .setDraggable(true)
+            .addTo(map);
+          //dragmarker.on("dragend", onDragEnd);
+
+          marker = new mapboxgl.Marker({ offset: [0, -50 / 2] })
+            .setLngLat([parseFloat(longitude), parseFloat(latitude)])
+            .setDraggable(false)
+            .addTo(map);
         });
+      } catch (error) {
+        console.error("Error fetching parking data:", error);
+      }
+    });
 
-        map.on("load", () => {
-            console.log("Map loaded");
-        });
+    map.addControl(geolocate);
 
-        const geolocate = new mapboxgl.GeolocateControl({
-            positionOptions: {
-                enableHighAccuracy: true,
-            },
-            trackUserLocation: true,
-            showUserHeading: true,
-        });
+    // Clean up on unmount
+    return () => map.remove();
+  }, []);
 
-        geolocate.on("geolocate", async (e) => {
-            const longitude = e.coords.longitude;
-            const latitude = e.coords.latitude;
-            setUserLocation({ longitude, latitude });
+  const onDragEnd = () => {
+    const lngLat = dragmarker.getLngLat();
+    coordinatesDiv.current.style.display = "block";
+    coordinatesDiv.current.innerHTML = `Longitude: ${lngLat.lng}<br />Latitude: ${lngLat.lat}`;
+  };
 
-            try {
-                const response = await axios.get(
-                    `http://localhost:8000/api/v1/parking?parking_day=M&start_time=300&end_time=600&x_coord=${longitude}&y_coord=${latitude}&radius=0.1`
-                );
-                console.log("data:", response.data);
-                response.data.forEach((item, index) => {
-                    if (marker) {
-                        marker.remove();
-                    }
-                    console.log(`Parking Spot ${index} mid Coord:`, item.midpoint);
-                    const [longitude, latitude] = item.midpoint
-                        .replace(/[()]/g, "")
-                        .split(",");
+  return (
+    <div ref={mapContainerRef} className="w-full h-full">
+      <h1>alms</h1>
 
-                    marker = new mapboxgl.Marker({ offset: [0, -50 / 2] })
-                        .setLngLat([parseFloat(longitude), parseFloat(latitude)])
-                        .setDraggable(false)
-                        .addTo(map);
-                });
-            } catch (error) {
-                console.error("Error fetching parking data:", error);
-            }
-        });
-
-        map.addControl(geolocate);
-
-        // Clean up on unmount
-        return () => map.remove();
-    }, []);
-
-    return (
-        <div ref={mapContainerRef} className="w-full h-full">
-            <h1>alms</h1>
-            {isLoading ? (
-                <div className="loading">Loading...</div> // Replace this with your actual loading symbol
-            ) : (
-                <div ref={mapContainerRef} className="mapContainer" />
-            )}
-        </div>
-    );
+      {isLoading ? (
+        <div className="loading">Loading...</div> // Replace this with your actual loading symbol
+      ) : (
+        <div ref={mapContainerRef} className="mapContainer" />
+      )}
+    </div>
+  );
 }
 
 export default Map;
