@@ -21,25 +21,25 @@ export default function Prompt(height) {
         fetch("http://localhost:8000/api/v1/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 "messages": newMessages,
                 "longitude": -122.4, // TO BE CHANGED
                 "latitude": 37.7, // TO BE CHANGED
                 "radius": 1.0, // TO BE CHANGED
             })
         })
-        .then((response) => response.json())
-        .then((data) => {
-            console.log(data);
-            setMessages([...newMessages, { "role": "user", "content": data.message }]);
-        })
-        .catch((error) => {
-            console.error("Error:", error);
-        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data);
+                setMessages([...newMessages, { "role": "user", "content": data.message }]);
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+            })
     }
 
     return (
-        <div className="flex flex-col justify-between h-full w-full">
+        <div className="h-full flex flex-col">
             <div className="flex flex-col overflow-y-scroll flex-1 gap-3 py-5 px-3 no-scrollbar">{
                 messages.slice(1,).map((message) => {
                     return (
