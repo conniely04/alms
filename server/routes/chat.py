@@ -42,10 +42,12 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
         temperature=0,
         messages=messages,
     )
+    chat_completion.choices[0].message.content = chat_completion.choices[0].message.content.strip()
     if chat_completion.choices[0].message.content[-1] != '}':
         chat_completion.choices[0].message.content += '}'
     response = json.loads(chat_completion.choices[0].message.model_dump_json())['content']
     response = json.loads(response.strip())
+    print(response)
     if response['response'] == 'clarify':
         return response
     else:
@@ -79,6 +81,7 @@ router = APIRouter(
 
 @router.post('/')
 async def chat(request: RequestBody):
+    print(request.messages)
     return await get_model_response(request.messages, request.longitude, request.latitude, request.radius)
 
 # STARTING REQUEST BODY. AS YOU MESSAGE, APPEND TO MESSAGES LIST.
