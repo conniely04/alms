@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function Prompt({messages, setMessages}) {
+export default function Prompt({messages, setMessages, longitude, latitude}) {
 
     const [inputText, setInputText] = useState("");
 
@@ -12,14 +12,14 @@ export default function Prompt({messages, setMessages}) {
         setMessages(newMessages);
         setInputText("");
 
-        fetch("http://localhost:8000/api/v1/chat", {
+        fetch("http://localhost:8000/api/v1/chat/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 "messages": newMessages,
-                "longitude": -122.4, // TO BE CHANGED
-                "latitude": 37.7, // TO BE CHANGED
-                "radius": 1.0, // TO BE CHANGED
+                "longitude": longitude, // TO BE CHANGED
+                "latitude": latitude, // TO BE CHANGED
+                "radius": 0.005, // TO BE CHANGED
             })
         })
         .then((response) => response.json())

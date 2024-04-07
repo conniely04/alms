@@ -3,7 +3,7 @@ import Map from '../components/Map'
 import { useState } from 'react'
 import { IoMdMap, IoIosChatboxes } from "react-icons/io";
 
-export default function Web({messages, setMessages}) {
+export default function Web({messages, setMessages, longitude, setLongitude, latitude, setLatitude}) {
 
     const [view, setView] = useState('chat')
 
@@ -20,7 +20,7 @@ export default function Web({messages, setMessages}) {
                         view === 'chat' ? <IoMdMap size={20} /> : <IoIosChatboxes size={20} />
                     }</div>
                 </div> {/* TODO: CHANGE FONT */}
-                {view === 'chat' ? <Prompt messages={messages} setMessages={setMessages} /> : <Map />}
+                {view === 'chat' ? <Prompt messages={messages} setMessages={setMessages} longitude={longitude} latitude={latitude} /> : <Map setLongitude={setLongitude} setLatitude={setLatitude} />}
             </div>
         </>
     )

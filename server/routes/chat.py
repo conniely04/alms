@@ -31,31 +31,184 @@ client = OpenAI(
 
 async def get_model_response(messages: list[dict[str, str]], longitude:float, latitude:float, radius:float):
 
-    chat_completion = client.chat.completions.create(
-        model="accounts/fireworks/models/llama-v2-13b-chat",
-        temperature=0.25,
-        # model='accounts/fireworks/models/yi-34b-chat',
-        response_format={"type": "json_object", "schema": ChatOutputSchema.schema_json()},
-        messages=messages,
-    )
-    chat_completion.choices[0].message.content = chat_completion.choices[0].message.content.strip()
-    if chat_completion.choices[0].message.content[-1] != '}':
-        chat_completion.choices[0].message.content += '}'
-    response = json.loads(chat_completion.choices[0].message.model_dump_json())['content']
-    response = json.loads(response.strip())
-    print(response)
-    if response['response'] == 'clarify':
-        return response
-    else:
-        parking_day = response['day']
-        start_time = response['start']
-        end_time = response['end']
+    # chat_completion = client.chat.completions.create(
+    #     model="accounts/fireworks/models/llama-v2-13b-chat",
+    #     temperature=0.25,
+    #     # model='accounts/fireworks/models/yi-34b-chat',
+    #     response_format={"type": "json_object", "schema": ChatOutputSchema.schema_json()},
+    #     messages=messages,
+    # )
+    # chat_completion.choices[0].message.content = chat_completion.choices[0].message.content.strip()
+    # if chat_completion.choices[0].message.content[-1] != '}':
+    #     chat_completion.choices[0].message.content += '}'
+    # response = json.loads(chat_completion.choices[0].message.model_dump_json())['content']
+    # response = json.loads(response.strip())
+    # print(response)
+    # if response['response'] == 'clarify':
+    #     return response
+    # else:
+    #     parking_day = response['day']
+    #     start_time = response['start']
+    #     end_time = response['end']
+    #     res = await get_streets(parking_day, start_time, end_time, longitude, latitude, radius)
+    #     return {
+    #         "response": "done",
+    #         "message": "Here is a parking that may work for you!",
+    #         "parking": res
+    #     }    
+    import requests
+    import json
+
+    url = "https://api.fireworks.ai/inference/v1/chat/completions"
+    payload = {
+        "model": "accounts/fireworks/models/firefunction-v1",
+        "max_tokens": 4096,
+        "top_p": 1,
+        "top_k": 40,
+        "presence_penalty": 0,
+        "frequency_penalty": 0,
+        "temperature": 0.2,
+        "messages": messages,
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "ask_clarifying_parking_question",
+                    "description": "If the user is asking about parking, asks a clarifying question to gather 3 data points: The day of the week, the start hour, and the end hour of the user's desired parking time.",
+                    "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "day_of_the_week": {
+                        "type": "string",
+                        "enum": [
+                            "M",
+                            "Tu",
+                            "W",
+                            "Th",
+                            "F",
+                            "Sa",
+                            "Su"
+                        ],
+                        "description": "The day of the week"
+                        },
+                        "start_hour": {
+                        "type": "number",
+                        "description": "The start time of parking from 0000-2399"
+                        },
+                        "end_hour": {
+                        "type": "number",
+                        "description": "The end time of parking from 0000-2399"
+                        }
+                    },
+                    "required": [
+                        "day_of_the_week",
+                        "start_hour",
+                        "end_hour"
+                    ]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "list_parking_time_as_json",
+                    "description": "If the user is asking about parking and has provided the day of the week, start hour, and end hour, simply respond with the 3 metrics in JSON format.",
+                    "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "day_of_the_week": {
+                        "type": "string",
+                        "enum": [
+                            "M",
+                            "Tu",
+                            "W",
+                            "Th",
+                            "F",
+                            "Sa",
+                            "Su"
+                        ],
+                        "description": "The day of the week"
+                        },
+                        "start_hour": {
+                        "type": "number",
+                        "description": "The start time of parking from 0000-2399"
+                        },
+                        "end_hour": {
+                        "type": "number",
+                        "description": "The end time of parking from 0000-2399"
+                        }
+                    },
+                    "required": [
+                        "day_of_the_week",
+                        "start_hour",
+                        "end_hour"
+                    ]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analyze_message_and_determine_services",
+                    "description": "If the user does not specify what service they want, analyze the user's message and try to determine what service they could find useful. Ask clarifying questions. Do NOT inquiry about the location or anything specific. Simply just figure out what the service is.",
+                    "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "message": {
+                            "type": "string",
+                        },
+                        "service": {
+                            "type": "string",
+                            "enum": ["bathrooms", "water", "laundry", "internet", "narcan"]
+                        }
+                    },
+                    "required": [
+                        "message"
+                    ]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "return_required_service",
+                    "description": "If the user is requesting a particular service, respond with a single word string of the service.",
+                    "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "service": {
+                            "type": "string",
+                            "enum": ["bathrooms", "water", "laundry", "internet", "narcan"]
+                        }
+                    },
+                    "required": [
+                        "service"
+                    ]
+                    }
+                }
+            }
+        ]
+    }
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + FIREWORKS_KEY
+    }
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+    print(response.text)
+    response = response.json()['choices'][0]['message']['content']
+    if '{' in response and '}' in response:
+        response = response[response.index('{'):response.index('}')+1]
+        parking_day = json.loads(response)['day_of_the_week']
+        start_time = json.loads(response)['start_hour']
+        end_time = json.loads(response)['end_hour']
         res = await get_streets(parking_day, start_time, end_time, longitude, latitude, radius)
         return {
-            "response": "done",
             "message": "Here is a parking that may work for you!",
             "parking": res
-        }    
+        }
+    else:
+        return { "message": response }
 
 def is_message_looking_for_parking(message: str) -> bool:
     chat_completion = client.chat.completions.create(
@@ -77,7 +230,7 @@ router = APIRouter(
 
 @router.post('/')
 async def chat(request: RequestBody):
-    print(request.messages)
+    # print(request.messages)
     return await get_model_response(request.messages, request.longitude, request.latitude, request.radius)
 
 # STARTING REQUEST BODY. AS YOU MESSAGE, APPEND TO MESSAGES LIST.

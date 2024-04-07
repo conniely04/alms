@@ -5,7 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 mapboxgl.accessToken =
   "pk.eyJ1IjoiY29ubmllbHkwNCIsImEiOiJjbG5namJ4NTYwdm82MmtxeDVlbjdlbmp4In0.NWMlrVKbeXYxskBZkpQI0Q";
 
-export default function Map() {
+export default function Map({setLongitude, setLatitude}) {
   let dragmarker;
   const mapContainerRef = useRef(null);
 
@@ -41,9 +41,13 @@ export default function Map() {
           .setLngLat([parseFloat(e.coords.longitude), parseFloat(latitude)])
           .setDraggable(true)
           .addTo(map);
+        setLongitude(e.coords.longitude);
+        setLatitude(e.coords.latitude);
 
         dragmarker.on("dragend", function () {
           const lngLat = dragmarker.getLngLat();
+          setLongitude(lngLat.lng);
+          setLatitude(lngLat.lat);
           console.log(
             `New longitude: ${lngLat.lng}, New latitude: ${lngLat.lat}`
           );

@@ -1,7 +1,7 @@
 import Prompt from '../components/Prompt'
 import Map from '../components/Map'
 
-export default function Web({messages, setMessages}) {
+export default function Web({messages, setMessages, longitude, setLongitude, latitude, setLatitude}) {
 
     return (
         <>
@@ -10,11 +10,11 @@ export default function Web({messages, setMessages}) {
                     <div className='my-auto'>alms</div>
                 </div>
                 <div className='absolute z-10 p-5 left-[5%] bottom-[10%] bg-slate-900 overflow-hidden rounded-2xl border-2 h-[50%] max-h-96 w-[30%] max-w-[35rem] min-w-[24rem]'>
-                    <Prompt messages={messages} setMessages={setMessages} />
+                    <Prompt messages={messages} setMessages={setMessages} longitude={longitude} latitude={latitude} />
                 </div>
                 <div className='flex-1'>
 
-                    <Map />
+                    <Map setLongitude={setLongitude} setLatitude={setLatitude} />
                 </div>
             </div>
         </>
