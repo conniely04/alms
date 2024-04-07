@@ -15,7 +15,7 @@ export default function Prompt({messages, setMessages}) {
         fetch("http://localhost:8000/api/v1/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 "messages": newMessages,
                 "longitude": -122.4, // TO BE CHANGED
                 "latitude": 37.7, // TO BE CHANGED
@@ -33,7 +33,7 @@ export default function Prompt({messages, setMessages}) {
     }
 
     return (
-        <div className="flex flex-col justify-between h-full w-full">
+        <div className="h-full flex flex-col">
             <div className="flex flex-col overflow-y-scroll flex-1 gap-3 py-5 px-3 no-scrollbar">{
                 messages.slice(1,).map((message) => {
                     return (
