@@ -77,14 +77,14 @@ export default function Prompt({
             setInputText(e.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !loading) {
               sendMessage();
             }
           }}
         />
         <div
-          className="m-auto bg-orange-600 px-3 py-2 rounded-md"
-          onClick={sendMessage}
+          className={"m-auto bg-orange-600 px-3 py-2 rounded-md" + (loading ? " opacity-50" : "")}
+          onClick={() => {if (!loading) sendMessage()}}
         >
           Send
         </div>

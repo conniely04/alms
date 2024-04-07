@@ -48,36 +48,17 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
                 "type": "function",
                 "function": {
                     "name": "ask_clarifying_parking_question",
-                    "description": "USE THIS IF: If the user is asking about parking and you must ask a clarifying question to gather 3 data points: The day of the week, the start hour, and the end hour of the user's desired parking time.",
+                    "description": "If the user is asking about parking and you must ask a clarifying question to gather 3 data points: The day of the week, the start hour, and the end hour of the user's desired parking time.",
                     "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "day_of_the_week": {
-                        "type": "string",
-                        "enum": [
-                            "M",
-                            "Tu",
-                            "W",
-                            "Th",
-                            "F",
-                            "Sa",
-                            "Su"
-                        ],
-                        "description": "The day of the week"
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "description": "The user's message."
+                            }
                         },
-                        "start_hour": {
-                        "type": "number",
-                        "description": "The start time of parking from 0000-2399"
-                        },
-                        "end_hour": {
-                        "type": "number",
-                        "description": "The end time of parking from 0000-2399"
-                        }
-                    },
                     "required": [
-                        "day_of_the_week",
-                        "start_hour",
-                        "end_hour"
+                        "message"
                     ]
                     }
                 }
@@ -86,7 +67,7 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
                 "type": "function",
                 "function": {
                     "name": "list_parking_time_as_json",
-                    "description": "USE THIS IF: The user is asking about parking and has provided the day of the week, start hour, and end hour. Respond with the 3 metrics in JSON format.",
+                    "description": "If the user is asking about parking and has provided the day of the week, start hour, and end hour. Respond with the 3 metrics in JSON format.",
                     "parameters": {
                     "type": "object",
                     "properties": {
@@ -105,11 +86,11 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
                         },
                         "start_hour": {
                         "type": "number",
-                        "description": "The start time of parking from 0000-2399"
+                        "description": "The start time of parking in 4 digit 24 hour time (0-2399)"
                         },
                         "end_hour": {
                         "type": "number",
-                        "description": "The end time of parking from 0000-2399"
+                        "description": "The end time of parking in 4 digit 24 hour time (0-2399)"
                         }
                     },
                     "required": [
@@ -123,17 +104,14 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
             {
                 "type": "function",
                 "function": {
-                    "name": "analyze_message_and_determine_services",
-                    "description": "USE THIS IF: the user is NOT talking about parking. Analyze the user's message to determine what service they could find useful. Do NOT inquiry about the location or anything specific. Figure out what the service is and say \"Now finding the nearest <service>.\"",
+                    "name": "determine_service_if_not_parking",
+                    "description": "Do not use this to find nearest parking. Determine what service the user could find useful. Say \"Now finding the nearest <service>.\" Possible services are bathroom, drinking fountain, laundromat, internet access, and narcan. Do not repeat.",
                     "parameters": {
                     "type": "object",
                     "properties": {
                         "message": {
                             "type": "string",
-                        },
-                        "service": {
-                            "type": "string",
-                            "enum": ["bathroom", "drinking fountain", "laundromat", "internet access", "narcan"]
+                            "description": "The user's message."
                         }
                     },
                     "required": [
@@ -160,7 +138,7 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
         
     print(response)
     # get parking
-    if '{' in response and '}' in response:
+    if '{' in response and '}' in response and 'day_of_the_week' in response:
         response = response[response.index('{'):response.index('}')+1]
         parking_day = json.loads(response)['day_of_the_week']
         start_time = json.loads(response)['start_hour']
@@ -206,20 +184,6 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
             }
     else:
         return { "message": response }
-
-def is_message_looking_for_parking(message: str) -> bool:
-    chat_completion = client.chat.completions.create(
-        model="accounts/fireworks/models/mixtral-8x7b-instruct",
-        response_format={"type": "json_object", "schema": TrueFalseSchema.model_json_schema()},
-        messages=[
-            {
-                "role": "user",
-                "content": "In JSON, taken this message and determine whether the user is looking for parking: " + message,
-            },
-        ],
-    )
-    return 'true' in chat_completion.choices[0].message.content
-
 
 router = APIRouter(
     prefix='/chat'
