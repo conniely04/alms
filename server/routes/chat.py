@@ -13,15 +13,15 @@ class RequestBody(BaseModel):
     latitude: float
     radius: float = 0.1
 
+class TrueFalseSchema(BaseModel):
+    boolean: bool
+
 class ChatOutputSchema(BaseModel):
     message: str
     response: str
     start: int
     end: int
     day: str
-
-class TrueFalseSchema(BaseModel):
-    boolean: bool
 
 
 client = OpenAI(
@@ -32,10 +32,10 @@ client = OpenAI(
 async def get_model_response(messages: list[dict[str, str]], longitude:float, latitude:float, radius:float):
 
     chat_completion = client.chat.completions.create(
-        model="accounts/fireworks/models/llama-v2-70b-chat",
-        max_tokens=100,
-        response_format={"type": "json_object", "schema": ChatOutputSchema.model_json_schema()},
-        temperature=0,
+        model="accounts/fireworks/models/llama-v2-13b-chat",
+        temperature=0.25,
+        # model='accounts/fireworks/models/yi-34b-chat',
+        response_format={"type": "json_object", "schema": ChatOutputSchema.schema_json()},
         messages=messages,
     )
     chat_completion.choices[0].message.content = chat_completion.choices[0].message.content.strip()

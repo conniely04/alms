@@ -1,14 +1,8 @@
 import React, { useState } from "react";
 
-export default function Prompt(height) {
+export default function Prompt({messages, setMessages}) {
 
     const [inputText, setInputText] = useState("");
-    const [messages, setMessages] = useState([
-        {
-            "role": "system",
-            "content": "You are a smart parking assistant AI. Your task is to take user input and determine when they are look for parking. You must determine the day of the week, the start hour (in 4 digit 24 hour time), and the end hour (in 4 digit 24 hour time) of their parking. If you are unsure, make sure to ask clarifying questions. You are NOT to determine any information about the parking itself. You are not done until you know all of the following: Day of the week, start hour (in 4 digit 24 hour time), end hour (in 4 digit 24 hour time). DO NOT SET YOUR RESPONSE TO DONE UNTIL YOU ARE SURE YOU HAVE ALL INFORMATION REQUIRED. If you are clarifying, set your response property to clarify. If you are done, set your response property to done. Respond in JSON."
-        }
-    ])
 
     function sendMessage() {
         if (inputText === "") {
@@ -28,14 +22,14 @@ export default function Prompt(height) {
                 "radius": 1.0, // TO BE CHANGED
             })
         })
-            .then((response) => response.json())
-            .then((data) => {
-                console.log(data);
-                setMessages([...newMessages, { "role": "user", "content": data.message }]);
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-            })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+            setMessages([...newMessages, { "role": "assistant", "content": data.message }]);
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+        })
     }
 
     return (
@@ -43,7 +37,7 @@ export default function Prompt(height) {
             <div className="flex flex-col overflow-y-scroll flex-1 gap-3 py-5 px-3 no-scrollbar">{
                 messages.slice(1,).map((message) => {
                     return (
-                        message.role === "user"
+                        message.role === "assistant"
                             ?
                             <div className="flex">
                                 <div className="flex flex-col flex-1 gap-2">
