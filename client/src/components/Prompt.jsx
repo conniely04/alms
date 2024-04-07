@@ -6,45 +6,84 @@ export default function Prompt({
   longitude,
   latitude,
   onDataAvailable,
+  bathroomavailable,
+  wateravailable,
+  narcanavailable,
+  reloadavailable,
 }) {
+  const [inputText, setInputText] = useState("");
+  const [reload, setReload] = useState(false);
 
-    const [inputText, setInputText] = useState("");
-    const [loading, setLoading] = useState(false);
-
-    function sendMessage() {
-        if (inputText === "") {
-            return;
-        }
-        const newMessages = [...messages, { "role": "user", "content": inputText }];
-        setMessages(newMessages);
-        setInputText("");
-        
-        setLoading(true);
-        fetch("http://localhost:8000/api/v1/chat/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                "messages": newMessages,
-                "longitude": longitude, // TO BE CHANGED
-                "latitude": latitude, // TO BE CHANGED
-                "radius": 0.005, // TO BE CHANGED
-            })
-        })
-        .then((response) => response.json())
-        .then((data) => {
-            console.log(data);
-            setMessages([...newMessages, { "role": "assistant", "content": data.message }]);
-            setLoading(false);
-        })
-        .catch((error) => {
-            console.error("Error:", error);
-            setLoading(false);
-        })
+  function sendMessage() {
+    if (inputText === "") {
+      return;
     }
+    function triggerMapReload() {
+      // Toggle the reload state variable
+      setReload(!reload);
+    }
+
+    const newMessages = [...messages, { role: "user", content: inputText }];
+    setMessages(newMessages);
+    setInputText("");
+
+    fetch("http://localhost:8000/api/v1/chat/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: newMessages,
+        longitude: longitude, // TO BE CHANGed
+        latitude: latitude, // TO BE CHANGED
+        radius: 0.005, // TO BE CHANGED
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+
+        setMessages([
+          ...newMessages,
+          { role: "assistant", content: data.message },
+        ]);
+        if (Object.keys(data).length > 1) {
+          // Call a function to change the reload prop in Map.jsx
+          reloadavailable(true);
+        }
+
+        if ("parking" in data) {
+          onDataAvailable(data.parking);
+        } else if ("bathrooms" in data) {
+          bathroomavailable(data.bathrooms);
+        } else if ("fountains" in data) {
+          wateravailable(data.fountains);
+        } else {
+          narcanavailable(data.narcan);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-col overflow-y-scroll flex-1 gap-3 py-5 px-3 no-scrollbar">
+        <div className="flex">
+          <div className="flex flex-col flex-1 gap-2">
+            <div className="text-slate-400 px-1">alms</div>
+            <div className="bg-slate-800 px-3 py-2 rounded-lg max-w-[80%] w-fit break-words">
+              Welcome to alms!
+            </div>
+          </div>
+        </div>
+        <div className="flex">
+          <div className="flex flex-col flex-1 gap-2">
+            <div className="bg-slate-800 px-3 py-2 rounded-lg max-w-[80%] w-fit break-words">
+              We provide services for parking, bathrooms, water fountains, and
+              narcan. Please let me know how I can assist you.
+            </div>
+          </div>
+        </div>
         {messages.slice(1).map((message) => {
           return message.role === "assistant" ? (
             <div className="flex">
@@ -77,14 +116,14 @@ export default function Prompt({
             setInputText(e.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !loading) {
+            if (e.key === "Enter") {
               sendMessage();
             }
           }}
         />
         <div
-          className={"m-auto bg-orange-600 px-3 py-2 rounded-md" + (loading ? " opacity-50" : "")}
-          onClick={() => {if (!loading) sendMessage()}}
+          className="m-auto bg-orange-600 px-3 py-2 rounded-md"
+          onClick={sendMessage}
         >
           Send
         </div>

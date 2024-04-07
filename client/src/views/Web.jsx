@@ -13,10 +13,33 @@ export default function Web({
   setLatitude,
 }) {
   const [parkingData, setParkingData] = useState([]);
+  const [bathroomData, setBathroomData] = useState([]);
+  const [waterData, setWaterData] = useState([]);
+  const [narcanData, setNarcanData] = useState([]);
+  const [reload, setReload] = useState(false);
+
   const handleDataAvailable = (data) => {
-    console.log("web.jsx:", data);
+    // console.log("web.jsx:", data);
     setParkingData([...parkingData, ...data]);
   };
+  const handlebathroomabAvailable = (data) => {
+    //console.log("web.jsx:", data);
+    setBathroomData([...bathroomData, ...data]);
+  };
+  const handlefountainAvailable = (data) => {
+    // console.log("web.jsx:", data);
+    setWaterData([...waterData, ...data]);
+  };
+  const handlenarcanAvailable = (data) => {
+    // console.log("web.jsx:", data);
+    setNarcanData([...narcanData, ...data]);
+  };
+
+  const handlereloadavailable = () => {
+    // console.log("reload??");
+    setReload(true);
+  };
+
   return (
     <>
       <div className="flex flex-col relative h-full w-full">
@@ -33,6 +56,10 @@ export default function Web({
             longitude={longitude}
             latitude={latitude}
             onDataAvailable={handleDataAvailable}
+            bathroomavailable={handlebathroomabAvailable}
+            wateravailable={handlefountainAvailable}
+            narcanavailable={handlenarcanAvailable}
+            reloadavailable={handlereloadavailable}
           />
         </div>
         <div className="flex-1">
@@ -40,6 +67,10 @@ export default function Web({
             setLongitude={setLongitude}
             setLatitude={setLatitude}
             parkingData={parkingData}
+            bathroomData={bathroomData}
+            waterData={waterData}
+            narcanData={narcanData}
+            reload={reload}
           />
         </div>
       </div>
