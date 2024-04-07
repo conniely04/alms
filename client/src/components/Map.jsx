@@ -10,14 +10,36 @@ export default function Map({ setLongitude, setLatitude, parkingData }) {
   const mapContainerRef = useRef(null);
 
   console.log("parkingData:", parkingData);
+
+  async function updateMarkers(map, data) {
+    const [longitude, latitude] = await data.midpoint
+      .replace("(", "") // Remove the opening parenthesis
+      .replace(")", "") // Remove the closing parenthesis
+      .split(",") // Split the string into an array
+      .map(parseFloat); // Convert the strings to numbers
+
+    const marker = new mapboxgl.Marker({ offset: [0, -50 / 2] }).setLngLat([
+      longitude,
+      latitude,
+    ]);
+    console.log(marker);
+    marker.addTo(map);
+
+    // If no such marker exists, create a new one and add it to the map and the markers array
+  }
+
+  let map;
+
   useEffect(() => {
-    const map = new mapboxgl.Map({
+    map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/navigation-night-v1",
       center: [-122.4147, 37.7856],
       zoom: 12.5,
     });
-    map.on("load", () => {
+
+    map.on("load", function () {
+      //remove geolocate trigger
       geolocate.trigger();
     });
 
@@ -60,6 +82,19 @@ export default function Map({ setLongitude, setLatitude, parkingData }) {
 
     return () => map.remove();
   }, []);
+  useEffect(() => {
+    if (parkingData) {
+      parkingData.forEach((data) => {
+        updateMarkers(map, data);
+      });
+    }
+  }, [parkingData]);
+
+  // if (Array.isArray(parkingData) && parkingData.length) {
+  //   parkingData.map((data, index) => {
+  //     console.log(`midpoint ${index}:`, data.midpoint);
+  //   });
+  // }
 
   return (
     <div ref={mapContainerRef} className="w-full h-full">

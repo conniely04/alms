@@ -13,7 +13,7 @@ export default function Web({
   const [parkingData, setParkingData] = useState([]);
   const handleDataAvailable = (data) => {
     console.log("web.jsx:", data);
-    setParkingData([...parkingData, data]);
+    setParkingData([...parkingData, ...data]);
   };
   return (
     <>
