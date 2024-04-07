@@ -1,15 +1,11 @@
-from os import getenv
 import json
 
-from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException
+from env import FIREWORKS_KEY
 from pydantic import BaseModel
-import requests
 from openai import OpenAI
 
 from logic.street import get_streets
-
-load_dotenv()
 
 class RequestBody(BaseModel):
     messages: list[dict[str, str]]
@@ -30,7 +26,7 @@ class TrueFalseSchema(BaseModel):
 
 client = OpenAI(
     base_url="https://api.fireworks.ai/inference/v1",
-    api_key=getenv("FIREWORKS_API_KEY"),
+    api_key = FIREWORKS_KEY,
 )
 
 async def get_model_response(messages: list[dict[str, str]], longitude:float, latitude:float, radius:float):
