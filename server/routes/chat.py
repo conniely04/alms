@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 from logic.street import get_streets
-from logic.services import get_restrooms, get_water, get_narcan
+from logic.services import get_restrooms, get_water, get_narcan, get_libraries
 
 class RequestBody(BaseModel):
     messages: list[dict[str, str]]
@@ -15,8 +15,8 @@ class RequestBody(BaseModel):
     latitude: float
     radius: float = 0.1
 
-class TrueFalseSchema(BaseModel):
-    boolean: bool
+class ServiceSchema(BaseModel):
+    service: str
 
 class ChatOutputSchema(BaseModel):
     message: str
@@ -33,157 +33,180 @@ client = OpenAI(
 
 async def get_model_response(messages: list[dict[str, str]], longitude:float, latitude:float, radius:float):
 
-    url = "https://api.fireworks.ai/inference/v1/chat/completions"
-    payload = {
-        "model": "accounts/fireworks/models/firefunction-v1",
-        "max_tokens": 4096,
-        "top_p": 1,
-        "top_k": 40,
-        "presence_penalty": 0,
-        "frequency_penalty": 0,
-        "temperature": 0.2,
-        "messages": messages,
-        "tools": [
-            {
-                "type": "function",
-                "function": {
-                    "name": "ask_clarifying_parking_question",
-                    "description": "If the user is asking about parking and you must ask a clarifying question to gather 3 data points: The day of the week, the start hour, and the end hour of the user's desired parking time.",
-                    "parameters": {
+    chat_completion = client.chat.completions.create(
+        model="accounts/fireworks/models/mixtral-8x7b-instruct",
+        response_format={"type": "json_object", "schema": ServiceSchema.schema_json()},
+        messages=messages + [{
+            "role": "user",
+            "content": "Which of the following services am I inquiring about: bathroom, water, library, narcan, or parking? Respond in JSON format."
+        }],
+    )
+
+    requested_service = json.loads(chat_completion.choices[0].message.content)["service"]
+
+    if requested_service == "parking":
+        url = "https://api.fireworks.ai/inference/v1/chat/completions"
+        payload = {
+            "model": "accounts/fireworks/models/firefunction-v1",
+            "max_tokens": 4096,
+            "top_p": 1,
+            "top_k": 40,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "temperature": 0.2,
+            "messages": messages,
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "ask_clarifying_parking_question",
+                        "description": "If the user is asking about parking and you must ask a clarifying question to gather 3 data points: The day of the week, the start hour, and the end hour of the user's desired parking time.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "The user's message."
+                                }
+                            },
+                        "required": [
+                            "message"
+                        ]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "list_parking_time_as_json",
+                        "description": "If the user is asking about parking and has provided the day of the week, start hour, and end hour. Respond with the 3 metrics in JSON format.",
+                        "parameters": {
                         "type": "object",
                         "properties": {
-                            "message": {
-                                "type": "string",
-                                "description": "The user's message."
+                            "day_of_the_week": {
+                            "type": "string",
+                            "enum": [
+                                "M",
+                                "Tu",
+                                "W",
+                                "Th",
+                                "F",
+                                "Sa",
+                                "Su"
+                            ],
+                            "description": "The day of the week"
+                            },
+                            "start_hour": {
+                            "type": "number",
+                            "description": "The start time of parking in 4 digit 24 hour time (0-2399)"
+                            },
+                            "end_hour": {
+                            "type": "number",
+                            "description": "The end time of parking in 4 digit 24 hour time (0-2399)"
                             }
                         },
-                    "required": [
-                        "message"
-                    ]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "list_parking_time_as_json",
-                    "description": "If the user is asking about parking and has provided the day of the week, start hour, and end hour. Respond with the 3 metrics in JSON format.",
-                    "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "day_of_the_week": {
-                        "type": "string",
-                        "enum": [
-                            "M",
-                            "Tu",
-                            "W",
-                            "Th",
-                            "F",
-                            "Sa",
-                            "Su"
-                        ],
-                        "description": "The day of the week"
-                        },
-                        "start_hour": {
-                        "type": "number",
-                        "description": "The start time of parking in 4 digit 24 hour time (0-2399)"
-                        },
-                        "end_hour": {
-                        "type": "number",
-                        "description": "The end time of parking in 4 digit 24 hour time (0-2399)"
+                        "required": [
+                            "day_of_the_week",
+                            "start_hour",
+                            "end_hour"
+                        ]
                         }
-                    },
-                    "required": [
-                        "day_of_the_week",
-                        "start_hour",
-                        "end_hour"
-                    ]
                     }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "determine_service_if_not_parking",
-                    "description": "Do not use this to find nearest parking. Determine what service the user could find useful. Say \"Now finding the nearest <service>.\" Possible services are bathroom, drinking fountain, laundromat, internet access, and narcan. Do not repeat.",
-                    "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "message": {
-                            "type": "string",
-                            "description": "The user's message."
-                        }
-                    },
-                    "required": [
-                        "message"
-                    ]
-                    }
-                }
-            }
-        ]
-    }
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + FIREWORKS_KEY
-    }
-    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
-    print(response.text)
-
-    # This thing is dumb and might switch the response format sometimes
-    try:
-        response = response.json()['choices'][0]['message']['content']
-    except:
-        response = response.json()['choices'][0]['message']['tool_calls'][0]['function']['arguments']
-        
-    print(response)
-    # get parking
-    if '{' in response and '}' in response and 'day_of_the_week' in response:
-        response = response[response.index('{'):response.index('}')+1]
-        parking_day = json.loads(response)['day_of_the_week']
-        start_time = json.loads(response)['start_hour']
-        end_time = json.loads(response)['end_hour']
-        res = await get_streets(parking_day, start_time, end_time, longitude, latitude, radius)
-        return {
-            "message": "Here is a parking that may work for you!",
-            "parking": res
+                },
+            ]
         }
-    elif "Now finding" in response:
-        if "bathroom" in response:
-            res = await get_restrooms(longitude, latitude)
-            print('Finding bathrooms')
-            return { 
-                "message": "Now finding the nearest bathrooms.",
-                "bathrooms": res
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + FIREWORKS_KEY
+        }
+        response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
+        print(response.text)
+
+        # This thing is dumb and might switch the response format sometimes
+        try:
+            response = response.json()['choices'][0]['message']['content']
+        except:
+            response = response.json()['choices'][0]['message']['tool_calls'][0]['function']['arguments']
+        
+        print(response)
+        # get parking
+        if '{' in response and '}' in response and 'day_of_the_week' in response:
+            response = response[response.index('{'):response.index('}')+1]
+            parking_day = json.loads(response)['day_of_the_week']
+            start_time = json.loads(response)['start_hour']
+            end_time = json.loads(response)['end_hour']
+            res = await get_streets(parking_day, start_time, end_time, longitude, latitude, radius)
+            return {
+                "message": "Here is a parking that may work for you!",
+                "parking": res
             }
-        elif "drinking fountain" in response:
-            res = await get_water(longitude, latitude)
-            print('Finding drinking fountains')
-            return { 
-                "message": "Now finding the nearest drinking fountains.",
-                "fountains": res
-            }
-        # elif "laundromat" in response or "laundry" in response:
-        #     res = await get_restrooms(longitude, latitude)
-        #     return { 
-        #         "message": "Now finding the nearest bathroom.",
-        #         "bathrooms": res
-        #     }
-        # elif "internet" in response:
-        #     res = await get_restrooms(longitude, latitude)
-        #     return { 
-        #         "message": "Now finding the nearest bathroom.",
-        #         "bathrooms": res
-        #     }
-        elif "narcan" in response:
-            res = await get_narcan(longitude, latitude)
-            print('Finding narcan')
-            return { 
-                "message": "Now finding the nearest narcan stations.",
-                "narcan": res
-            }
-    else:
-        return { "message": response }
+        else:
+            return { "message": response }
+    elif requested_service == "bathroom":
+        res = await get_restrooms(longitude, latitude)
+        print('Finding bathrooms')
+        return { 
+            "message": "Now finding the nearest bathrooms.",
+            "bathrooms": res
+        }
+    elif requested_service == "water":
+        res = await get_water(longitude, latitude)
+        print('Finding drinking fountains')
+        return { 
+            "message": "Now finding the nearest drinking fountains.",
+            "fountains": res
+        }
+    elif requested_service == "library":
+        res = await get_libraries(longitude, latitude)
+        return { 
+            "message": "Now finding the nearest libraries.",
+            "libraries": res
+        }
+    elif requested_service == "narcan":
+        res = await get_narcan(longitude, latitude)
+        print('Finding narcan')
+        return { 
+            "message": "Now finding the nearest narcan stations.",
+            "narcan": res
+        }
+
+    # elif "Now finding" in response:
+    #     if "bathroom" in response:
+    #         res = await get_restrooms(longitude, latitude)
+    #         print('Finding bathrooms')
+    #         return { 
+    #             "message": "Now finding the nearest bathrooms.",
+    #             "bathrooms": res
+    #         }
+    #     elif "drinking fountain" in response:
+    #         res = await get_water(longitude, latitude)
+    #         print('Finding drinking fountains')
+    #         return { 
+    #             "message": "Now finding the nearest drinking fountains.",
+    #             "fountains": res
+    #         }
+    #     # elif "laundromat" in response or "laundry" in response:
+    #     #     res = await get_restrooms(longitude, latitude)
+    #     #     return { 
+    #     #         "message": "Now finding the nearest bathroom.",
+    #     #         "bathrooms": res
+    #     #     }
+    #     elif "librar" in response:
+    #         res = await get_libraries(longitude, latitude)
+    #         return { 
+    #             "message": "Now finding the nearest libraries.",
+    #             "libraries": res
+    #         }
+    #     elif "narcan" in response:
+    #         res = await get_narcan(longitude, latitude)
+    #         print('Finding narcan')
+    #         return { 
+    #             "message": "Now finding the nearest narcan stations.",
+    #             "narcan": res
+    #         }
+    # else:
+    #     return { "message": response }
 
 router = APIRouter(
     prefix='/chat'

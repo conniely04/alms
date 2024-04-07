@@ -42,9 +42,12 @@ async def get_closest_narcan(x_coord: float, y_coord: float):
         )
         res = await res.json()
         return res['data']
-    
-# async def main():
-#     res = await get_closest_streets('M', 900, 1800, -122.4, 37.7, 0.1)
-#     print(res)
 
-# asyncio.run(main())
+async def get_closest_library(x_coord: float, y_coord: float):
+    async with aiohttp.ClientSession() as session:
+        res = await session.get(
+            f'{db_url}/custom/find-closest-libraries?x_coord={x_coord}&y_coord={y_coord}',
+            headers = {'X-API-KEY': NEURELO_KEY}
+        )
+        res = await res.json()
+        return res['data']

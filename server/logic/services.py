@@ -8,3 +8,6 @@ async def get_water(x_coord: float, y_coord: float):
 
 async def get_narcan(x_coord: float, y_coord: float):
     return await db.get_closest_narcan(x_coord, y_coord)
+
+async def get_libraries(x_coord: float, y_coord: float):
+    return await db.get_closest_library(x_coord, y_coord)
