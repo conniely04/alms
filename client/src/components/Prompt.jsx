@@ -3,6 +3,7 @@ import React, { useState } from "react";
 export default function Prompt({messages, setMessages, longitude, latitude}) {
 
     const [inputText, setInputText] = useState("");
+    const [loading, setLoading] = useState(false);
 
     function sendMessage() {
         if (inputText === "") {
@@ -11,7 +12,8 @@ export default function Prompt({messages, setMessages, longitude, latitude}) {
         const newMessages = [...messages, { "role": "user", "content": inputText }];
         setMessages(newMessages);
         setInputText("");
-
+        
+        setLoading(true);
         fetch("http://localhost:8000/api/v1/chat/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -26,9 +28,11 @@ export default function Prompt({messages, setMessages, longitude, latitude}) {
         .then((data) => {
             console.log(data);
             setMessages([...newMessages, { "role": "assistant", "content": data.message }]);
+            setLoading(false);
         })
         .catch((error) => {
             console.error("Error:", error);
+            setLoading(false);
         })
     }
 
@@ -63,12 +67,12 @@ export default function Prompt({messages, setMessages, longitude, latitude}) {
                     value={inputText}
                     onChange={(e) => { setInputText(e.target.value) }}
                     onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === "Enter" && !loading) {
                             sendMessage();
                         }
                     }}
                 />
-                <div className="m-auto bg-orange-600 px-3 py-2 rounded-md" onClick={sendMessage}>Send</div>
+                <div className={"m-auto bg-orange-600 px-3 py-2 rounded-md" + (loading ? " opacity-50" : "")} onClick={() => {if (!loading) {sendMessage()}}} >Send</div>
             </div>
         </div>
     );

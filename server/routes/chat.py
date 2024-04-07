@@ -1,4 +1,5 @@
 import json
+import requests
 
 from fastapi import APIRouter, HTTPException
 from env import FIREWORKS_KEY
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 from logic.street import get_streets
+from logic.services import get_restrooms, get_water, get_narcan
 
 class RequestBody(BaseModel):
     messages: list[dict[str, str]]
@@ -31,34 +33,6 @@ client = OpenAI(
 
 async def get_model_response(messages: list[dict[str, str]], longitude:float, latitude:float, radius:float):
 
-    # chat_completion = client.chat.completions.create(
-    #     model="accounts/fireworks/models/llama-v2-13b-chat",
-    #     temperature=0.25,
-    #     # model='accounts/fireworks/models/yi-34b-chat',
-    #     response_format={"type": "json_object", "schema": ChatOutputSchema.schema_json()},
-    #     messages=messages,
-    # )
-    # chat_completion.choices[0].message.content = chat_completion.choices[0].message.content.strip()
-    # if chat_completion.choices[0].message.content[-1] != '}':
-    #     chat_completion.choices[0].message.content += '}'
-    # response = json.loads(chat_completion.choices[0].message.model_dump_json())['content']
-    # response = json.loads(response.strip())
-    # print(response)
-    # if response['response'] == 'clarify':
-    #     return response
-    # else:
-    #     parking_day = response['day']
-    #     start_time = response['start']
-    #     end_time = response['end']
-    #     res = await get_streets(parking_day, start_time, end_time, longitude, latitude, radius)
-    #     return {
-    #         "response": "done",
-    #         "message": "Here is a parking that may work for you!",
-    #         "parking": res
-    #     }    
-    import requests
-    import json
-
     url = "https://api.fireworks.ai/inference/v1/chat/completions"
     payload = {
         "model": "accounts/fireworks/models/firefunction-v1",
@@ -74,7 +48,7 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
                 "type": "function",
                 "function": {
                     "name": "ask_clarifying_parking_question",
-                    "description": "If the user is asking about parking, asks a clarifying question to gather 3 data points: The day of the week, the start hour, and the end hour of the user's desired parking time.",
+                    "description": "USE THIS IF: If the user is asking about parking and you must ask a clarifying question to gather 3 data points: The day of the week, the start hour, and the end hour of the user's desired parking time.",
                     "parameters": {
                     "type": "object",
                     "properties": {
@@ -112,7 +86,7 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
                 "type": "function",
                 "function": {
                     "name": "list_parking_time_as_json",
-                    "description": "If the user is asking about parking and has provided the day of the week, start hour, and end hour, simply respond with the 3 metrics in JSON format.",
+                    "description": "USE THIS IF: The user is asking about parking and has provided the day of the week, start hour, and end hour. Respond with the 3 metrics in JSON format.",
                     "parameters": {
                     "type": "object",
                     "properties": {
@@ -150,7 +124,7 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
                 "type": "function",
                 "function": {
                     "name": "analyze_message_and_determine_services",
-                    "description": "If the user does not specify what service they want, analyze the user's message and try to determine what service they could find useful. Ask clarifying questions. Do NOT inquiry about the location or anything specific. Simply just figure out what the service is.",
+                    "description": "USE THIS IF: the user is NOT talking about parking. Analyze the user's message to determine what service they could find useful. Do NOT inquiry about the location or anything specific. Figure out what the service is and say \"Now finding the nearest <service>.\"",
                     "parameters": {
                     "type": "object",
                     "properties": {
@@ -159,30 +133,11 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
                         },
                         "service": {
                             "type": "string",
-                            "enum": ["bathrooms", "water", "laundry", "internet", "narcan"]
+                            "enum": ["bathroom", "drinking fountain", "laundromat", "internet access", "narcan"]
                         }
                     },
                     "required": [
                         "message"
-                    ]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "return_required_service",
-                    "description": "If the user is requesting a particular service, respond with a single word string of the service.",
-                    "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "service": {
-                            "type": "string",
-                            "enum": ["bathrooms", "water", "laundry", "internet", "narcan"]
-                        }
-                    },
-                    "required": [
-                        "service"
                     ]
                     }
                 }
@@ -196,7 +151,15 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
     }
     response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
     print(response.text)
-    response = response.json()['choices'][0]['message']['content']
+
+    # This thing is dumb and might switch the response format sometimes
+    try:
+        response = response.json()['choices'][0]['message']['content']
+    except:
+        response = response.json()['choices'][0]['message']['tool_calls'][0]['function']['arguments']
+        
+    print(response)
+    # get parking
     if '{' in response and '}' in response:
         response = response[response.index('{'):response.index('}')+1]
         parking_day = json.loads(response)['day_of_the_week']
@@ -207,6 +170,40 @@ async def get_model_response(messages: list[dict[str, str]], longitude:float, la
             "message": "Here is a parking that may work for you!",
             "parking": res
         }
+    elif "Now finding" in response:
+        if "bathroom" in response:
+            res = await get_restrooms(longitude, latitude)
+            print('Finding bathrooms')
+            return { 
+                "message": "Now finding the nearest bathrooms.",
+                "bathrooms": res
+            }
+        elif "drinking fountain" in response:
+            res = await get_water(longitude, latitude)
+            print('Finding drinking fountains')
+            return { 
+                "message": "Now finding the nearest drinking fountains.",
+                "fountains": res
+            }
+        # elif "laundromat" in response or "laundry" in response:
+        #     res = await get_restrooms(longitude, latitude)
+        #     return { 
+        #         "message": "Now finding the nearest bathroom.",
+        #         "bathrooms": res
+        #     }
+        # elif "internet" in response:
+        #     res = await get_restrooms(longitude, latitude)
+        #     return { 
+        #         "message": "Now finding the nearest bathroom.",
+        #         "bathrooms": res
+        #     }
+        elif "narcan" in response:
+            res = await get_narcan(longitude, latitude)
+            print('Finding narcan')
+            return { 
+                "message": "Now finding the nearest narcan stations.",
+                "narcan": res
+            }
     else:
         return { "message": response }
 

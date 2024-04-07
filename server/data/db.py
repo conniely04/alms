@@ -16,6 +16,33 @@ async def get_closest_streets(parking_day: str, start_time: int, end_time: int, 
         res = await res.json()
         return res['data']
     
+async def get_closest_restrooms(x_coord: float, y_coord: float):
+    async with aiohttp.ClientSession() as session:
+        res = await session.get(
+            f'{db_url}/custom/find-closest-restrooms?x_coord={x_coord}&y_coord={y_coord}',
+            headers = {'X-API-KEY': NEURELO_KEY}
+        )
+        res = await res.json()
+        return res['data']
+
+async def get_closest_water(x_coord: float, y_coord: float):
+    async with aiohttp.ClientSession() as session:
+        res = await session.get(
+            f'{db_url}/custom/find-closest-water?x_coord={x_coord}&y_coord={y_coord}',
+            headers = {'X-API-KEY': NEURELO_KEY}
+        )
+        res = await res.json()
+        return res['data']
+
+async def get_closest_narcan(x_coord: float, y_coord: float):
+    async with aiohttp.ClientSession() as session:
+        res = await session.get(
+            f'{db_url}/custom/find-closest-narcan?x_coord={x_coord}&y_coord={y_coord}',
+            headers = {'X-API-KEY': NEURELO_KEY}
+        )
+        res = await res.json()
+        return res['data']
+    
 # async def main():
 #     res = await get_closest_streets('M', 900, 1800, -122.4, 37.7, 0.1)
 #     print(res)
