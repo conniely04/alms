@@ -68,6 +68,22 @@ export default function Prompt({
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-col overflow-y-scroll flex-1 gap-3 py-5 px-3 no-scrollbar">
+        <div className="flex">
+          <div className="flex flex-col flex-1 gap-2">
+            <div className="text-slate-400 px-1">alms</div>
+            <div className="bg-slate-800 px-3 py-2 rounded-lg max-w-[80%] w-fit break-words">
+              Welcome to alms!
+            </div>
+          </div>
+        </div>
+        <div className="flex">
+          <div className="flex flex-col flex-1 gap-2">
+            <div className="bg-slate-800 px-3 py-2 rounded-lg max-w-[80%] w-fit break-words">
+              We provide services for parking, bathrooms, water fountains, and
+              narcan. Please let me know how I can assist you.
+            </div>
+          </div>
+        </div>
         {messages.slice(1).map((message) => {
           return message.role === "assistant" ? (
             <div className="flex">

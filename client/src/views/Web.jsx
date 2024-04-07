@@ -9,8 +9,6 @@ export default function Web({
   setLongitude,
   latitude,
   setLatitude,
-  onDataAvailable,
-  bathroomavailable,
 }) {
   const [parkingData, setParkingData] = useState([]);
   const [bathroomData, setBathroomData] = useState([]);
