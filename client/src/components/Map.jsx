@@ -7,11 +7,13 @@ mapboxgl.accessToken =
   "pk.eyJ1IjoiY29ubmllbHkwNCIsImEiOiJjbG5namJ4NTYwdm82MmtxeDVlbjdlbmp4In0.NWMlrVKbeXYxskBZkpQI0Q";
 
 function Map() {
-  const [userLocation, setUserLocation] = useState({
-    longitude: null,
-    latitude: null,
-  });
-  let marker;
+  // const [userLocation, setUserLocation] = useState({
+  //   longitude: null,
+  //   latitude: null,
+  // });
+  // const [userlatitude, setLatitude] = useState(null);
+  // const [userlongitude, setLongitude] = useState(null);
+
   let dragmarker;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -43,43 +45,43 @@ function Map() {
     geolocate.on("geolocate", async (e) => {
       const longitude = e.coords.longitude;
       const latitude = e.coords.latitude;
-      setUserLocation({ longitude, latitude });
-
-      try {
-        const response = await axios.get(
-          `http://localhost:8000/api/v1/parking?parking_day=M&start_time=300&end_time=600&x_coord=${longitude}&y_coord=${latitude}&radius=0.1`
-        );
-        console.log("data:", response.data);
-        response.data.forEach((item, index) => {
-          if (marker) {
-            marker.remove();
-          }
-          if (dragmarker) {
-            dragmarker.remove();
-          }
-
-          console.log(`Parking Spot ${index} mid Coord:`, item.midpoint);
-          const [longitude, latitude] = item.midpoint
-            .replace(/[()]/g, "")
-            .split(",");
-
-          dragmarker = new mapboxgl.Marker({ offset: [0, -50 / 2] })
-            .setLngLat([
-              parseFloat(userLocation.longitude),
-              parseFloat(userLocation.latitude),
-            ])
-            .setDraggable(true)
-            .addTo(map);
-          //dragmarker.on("dragend", onDragEnd);
-
-          marker = new mapboxgl.Marker({ offset: [0, -50 / 2] })
-            .setLngLat([parseFloat(longitude), parseFloat(latitude)])
-            .setDraggable(false)
-            .addTo(map);
-        });
-      } catch (error) {
-        console.error("Error fetching parking data:", error);
+      console.log("Geolocated:", longitude, latitude);
+      // setLongitude(e.coords.longitude);
+      // setLatitude(e.coords.latitude);
+      if (dragmarker) {
+        dragmarker.remove();
       }
+      if (latitude && longitude) {
+        dragmarker = new mapboxgl.Marker({ offset: [0, -50 / 2] })
+          .setLngLat([parseFloat(longitude), parseFloat(latitude)])
+          .setDraggable(true)
+          .addTo(map);
+
+        dragmarker.on("dragend", function () {
+          const lngLat = dragmarker.getLngLat();
+          console.log(
+            `New longitude: ${lngLat.lng}, New latitude: ${lngLat.lat}`
+          );
+        });
+      }
+
+      //delete
+      //setUserLocation({ longitude, latitude });
+
+      // try {
+      //   const response = await axios.get(
+      //     `http://localhost:8000/api/v1/parking?parking_day=M&start_time=300&end_time=600&x_coord=${longitude}&y_coord=${latitude}&radius=0.1`
+      //   );
+      //   console.log("data:", response.data);
+      //   response.data.forEach((item, index) => {
+      //     console.log(`Parking Spot ${index} mid Coord:`, item.midpoint);
+      //     const [longitude, latitude] = item.midpoint
+      //       .replace(/[()]/g, "")
+      //       .split(",");
+      //   });
+      // } catch (error) {
+      //   console.error("Error fetching parking data:", error);
+      // }
     });
 
     map.addControl(geolocate);
@@ -87,12 +89,6 @@ function Map() {
     // Clean up on unmount
     return () => map.remove();
   }, []);
-
-  const onDragEnd = () => {
-    const lngLat = dragmarker.getLngLat();
-    coordinatesDiv.current.style.display = "block";
-    coordinatesDiv.current.innerHTML = `Longitude: ${lngLat.lng}<br />Latitude: ${lngLat.lat}`;
-  };
 
   return (
     <div ref={mapContainerRef} className="w-full h-full">
