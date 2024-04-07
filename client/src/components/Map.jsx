@@ -1,14 +1,15 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiY29ubmllbHkwNCIsImEiOiJjbG5namJ4NTYwdm82MmtxeDVlbjdlbmp4In0.NWMlrVKbeXYxskBZkpQI0Q";
 
-export default function Map({setLongitude, setLatitude}) {
+export default function Map({ setLongitude, setLatitude, parkingData }) {
   let dragmarker;
   const mapContainerRef = useRef(null);
 
+  console.log("parkingData:", parkingData);
   useEffect(() => {
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
