@@ -1,8 +1,5 @@
 import aiohttp
-import asyncio
-# from env import NEURELO_KEY
-
-NEURELO_KEY = 'neurelo_9wKFBp874Z5xFw6ZCfvhXd1NNE7zbVc2cHj2GQXvm3W/q3tD6DvIOfb3vTguy4PM/O+ZFPJ9kB6O8LTrKyvn5zdNlgkusZFhXG7DilVKp3lyVqn6fOZfU0Q6DIqTgrWu4+qYP5xMnEeeV7yNWekaxDoOkonnk4698r+RgPIZIT7sJ83TxmsAaRTNPukm7iIY_13UXZq7qLUOPVlO+/UkMnOWpvS/O8veTPh0gUG5ZenU='
+from env import NEURELO_KEY
 
 db_url = 'https://us-west-2.aws.neurelo.com'
 

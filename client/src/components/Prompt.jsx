@@ -12,15 +12,10 @@ export default function Prompt({
   reloadavailable,
 }) {
   const [inputText, setInputText] = useState("");
-  const [reload, setReload] = useState(false);
 
   function sendMessage() {
     if (inputText === "") {
       return;
-    }
-    function triggerMapReload() {
-      // Toggle the reload state variable
-      setReload(!reload);
     }
 
     const newMessages = [...messages, { role: "user", content: inputText }];

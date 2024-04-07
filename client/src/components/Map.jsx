@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -106,14 +106,12 @@ export default function Map({
           .setLngLat([longitude, latitude])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<p style="color: black;"> Street: ${
-                data.street_name
+              `<p style="color: black;"> Street: ${data.street_name
               }<br>Begin Park: ${convertMilitaryToStandard(
                 data.start_time_hr
               )}<br>End Park: ${convertMilitaryToStandard(
                 data.end_time_hr
-              )} <br>Park Day: ${data.park_day}<br>Sweep Day: ${
-                data.sweep_day
+              )} <br>Park Day: ${data.park_day}<br>Sweep Day: ${data.sweep_day
               }</p>`
             )
           )

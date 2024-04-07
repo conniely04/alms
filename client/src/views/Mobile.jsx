@@ -49,7 +49,10 @@ export default function Web({
     <>
       <div className="relative flex flex-col h-full w-full p-[5%]">
         <div className="flex justify-between pb-5 border-b-2 border-white">
-          <div className="my-auto">alms</div>
+          <div className="flex">
+            <img src={Logo} alt="" width={32} height={32} />
+            <div className="my-auto tracking-widest text-xl">ALMS</div>
+          </div>
           <div
             className="top-0 right-0 p-2 bg-slate-800 rounded-md"
             onClick={toggleView}
